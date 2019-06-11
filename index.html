@@ -15,5 +15,135 @@ This is a very simple and quick tutorial on how to use LAMMPS to simulate a poly
 
 <br><br>
 
+<b><h2>1. Compiling LAMMPS</h2></b>
+
+The LAMMPS source code can be downloaded as a tarball from the LAMMPS website: <a href="http://lammps.sandia.gov/download.html">lammps.sandia.gov/download.html</a>.
+
+<br><br>
+
+To compile with the basic packages, download and unpack, switch to the src/ directory and type:
+
+<PRE> make serial </PRE> or <PRE> make mpi </PRE> to compile serial or mpi versions. All the packages required to do the simulations in 2-5 below should be enabled by default (if you download via git checkout you might need to install them). For section 6 LAMMPS must be compiled with the ASPHERE packages and some additional custom interaction styles.
+
+<br><br>
+
+<! 
+<b><h3>OR</h3></b> If you are running on a School of Physics Linux host, and are not using any custom add-ons to LAMMPS (e.g. as needed in part 6 of this tutorial), then lammps is already compiled and available via a module.
+
+<br><br>
+
+To see available modules use the command <PRE> module avail </PRE> and to load the lammps module use <PRE> module load lammps/20180316-nopython </PRE> (there are different modules available if you need Python support). This makes executables "lmp_serial", "lmp_mpi" etc. avaialble on the command line (and you will not need to include the "./" before the "lmp_serial" commands detailed below).
+>
+
+<b><h2>2. First simulation - a diffusing particle</h2></b>
+
+The way we will use LAMMPS requires two input files: a script which tells LAMMPS what to do, and an initial configuration file which gives the initial coordinates of each atom in the system, as well as other information.
+
+<br><br>
+
+For the first example we will simulate a single atom diffusing in an implicit solvent. The input script and initial conditions files are  <a href="lammps_tutorial/tutorial2/diffusing_particle.lam">diffusing_particle.lam</a> and <a href="lammps_tutorial/tutorial2/initial_configuration.txt">initial_configuration.txt</a>.
+
+To run LAMMPS using these files, download them to a new directory where there is a copy of the LAMMPS executable and type <PRE> ./lmp_serial < diffusing_particle.lam </PRE> Some messages will be printed to the screen, and some output files created. Look at the comments in the in.diffusing_particle file for details of each command. The configuration file cannot contain any comments, but the details of how to lay out this file are <a href="http://lammps.sandia.gov/doc/read_data.html">here</a> in the LAMMPS manual. The output files include a "dump file" which contains the positions of the atom at regular time steps, and a "thermo file" which contains thermodynamic information at regular time steps. The dump file can be loaded into e.g. vmd to visualize the simulation trajectory (see below).
+
+<br><br>
+
+Here were are using LAMMPS to run a Langevin Dynamics simulation (sometimes called Brownian Dynamics), where the position of atoms are described by a <a href="https://en.wikipedia.org/wiki/Langevin_equation">Langevin equation</a>
+<br>
+<img src="lammps_tutorial/LangevinEqn.gif" alt="langevin equation">
+<br>
+where atoms experience random forces (<img src="lammps_tutorial/eta.gif" alt="\eta">) and viscous drag (<img src="lammps_tutorial/gamma.gif" alt="\gamma">) from an implied solvent. In LAMMPS we use the <a href="http://lammps.sandia.gov/doc/fix_nve.html">NVE</a> and <a href="http://lammps.sandia.gov/doc/fix_langevin.html">langevin</a> fixes, which results in an NVT system (<a href="https://en.wikipedia.org/wiki/Canonical_ensemble">canonical ensemble</a>); LAMMPS uses a <a href="https://www.google.co.uk/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=0ahUKEwiLgO7D-9_QAhXIDsAKHRWpBdYQygQIIjAA&url=https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FVerlet_integration%23Velocity_Verlet&usg=AFQjCNH_-wvGpFykslNCA-x4cmWTwZgptA&sig2=4w-GXCyd0j9KTGkz2lGaHg">velocity-Verlet</a> update rule. In this simulation the particle is diffusing in a "periodic box", i.e. if the particle moves out of one the edge of the box, it appears on the other side of the box. LAMMPS keeps track of movement through the periodic boundaries.
+
+<br><br>
+
+To view the dump file in <a href="http://www.ks.uiuc.edu/Research/vmd/">VMD</a>, choose "New Molecule" from the file menu, click browse to find the file, and select "LAMMPS Trajectory" from the drop down list before hitting "Load". Depending on the version of VMD, it may or may not "unwrap" the periodic boundaries if the particle moves through them. To wrap all atoms back into the periodic box, paste the following command on to the VMD command line:  <PRE> pbc wrap -all </PRE>
+
+To set some of the default options in VMD so that they are more appropriate for these kinds of simulations, download this <a href="lammps_tutorial/.vmdrc">.vmdrc</a> file and put it in your home (~/) directory. VMD should read it automatically when it starts.
+
+<br><br>
+
+<b><h2>3. Many diffusing particles</h2></b>
+
+Similar to the above, here we simulate particles diffusing in an implicit solvent. Now though, we introduce a Weeks-Chandler-Anderson (WCA; also called a shifted, truncated <a href="http://lammps.sandia.gov/doc/pair_lj.html">Lennard Jones</a>, LJ) interaction potential between the particles, so that they cannot overlap. 
+<br>
+<img src="lammps_tutorial/LJ.png" alt="LJ potential">  
+&nbsp &nbsp &nbsp &nbsp &nbsp &nbsp
+<br><br>
+
+In LAMMPS the WCA potential is obtained by using the LJ potential and selecting an appropriate cut-off (i.e. the cut-off is chosen at the minimum of the potential so there is no attractive part).
+
+<br><br>
+
+An initial conditions file is generated by choosing random x,y,z coordinates for each of the atoms. This means that there is a chance that initially some of the atoms might overlap. Since the LJ potential has a very strong short range repulsion, these overlapping atoms would experience very large forces in the first few steps of the simulation - LAMMPS would crash with an error. To prevent this we first run a short "equilibration simulation" using a different "softer" interaction potential: the atoms will be slowly pushed apart. Then we can switch to the LJ interactions.
+
+<br><br>
+
+Download the LAMMPS script  <a href="lammps_tutorial/tutorial3/many_particles.lam">many_particles.lam</a> and configuration file <a href="lammps_tutorial/tutorial3/initial_configuration.txt">initial_configuration.txt</a> to a new directory with a copy of the LAMMPS executable and run as follows <PRE> ./lmp_serial < many_particles.lam </PRE>
+
+In addition to a dump file and a thermo file, this script also uses a LAMMPS <a href="http://lammps.sandia.gov/doc/compute_msd.html">compute command</a> to calculate the mean squared displacement (MSD) of all the atoms as a function of time.
+
+<br><br>
+
+<b><h2>4. Join the atoms together into a polymer</h2></b>
+
+In this simulation the atoms are joined together in a chain to form a simple "bead-and-spring" polymer. The configuration file <a href="lammps_tutorial/tutorial4/initial_configuration.txt">initial_configuration.txt</a> now also contains a list of "bonds" and "angles" telling LAMMPS how the atoms are connected. The initial positions of the atoms are along the path of a random walk with step size 1, so that they are in a chain. 
+
+<br><br>
+
+We connect the atoms using finite-extensible non-linear (FENE) springs, and add and angle interaction between triplets of atoms so as to give the polymer some bending rigidity. As before we use an WCA interaction between the atoms so that they cannot overlap.
+<br>
+<img src="lammps_tutorial/FENE.png" alt="FENE potential">
+<img src="lammps_tutorial/cosine.png" alt="Bending potential">
+<br><br>
+
+Again, with these initial conditions is is possible (highly likely) that some atoms will overlap. To avoid the atoms experiencing large forces (which will lead to bonds being highly stretched and LAMMPS crashing) we run an equilibrium simulation using a "soft" pair interaction potential, and a "harmonic" bond interaction.
+
+<br><br>
+
+To run, download the script <a href="lammps_tutorial/tutorial4/polymer.lam">polymer.lam</a> and <a href="lammps_tutorial/tutorial4/initial_configuration.txt">initial_configuration.txt</a> to a new directory containing the LAMMPS executable, and us the command <PRE> ./lmp_serial < polymer.lam </PRE>
+
+This time, as well as the dump and thermo files, a LAMMPS <a href="http://lammps.sandia.gov/doc/compute_gyration.html">compute</a> is used to calculate the <a href="https://en.wikipedia.org/wiki/Radius_of_gyration#Molecular_applications">radius of gyration</a> of the polymer (a measure of its size in 3D space).
+
+<br><br>
+
+<b><h2>5. Polymer + bridges</h2></b>
+
+In this simulation we have both a chain of beads forming a polymer, and several un-linked beads. The un-linked beads have both a short range repulsive and a longer range attractive interaction with the polymer beads, for which we use an LJ interaction with a larger cut-off than before. 
+
+<br>
+<img src="lammps_tutorial/LJattract.png" alt="FENE potential">
+<br><br>
+
+We add repulsive interactions between polymer beads, and between un-linked beads. Together this means that the un-linked beads can stick to the polymer; since they can stick to more than one polymer bead at a time, they can form bridges between polymer beads.
+
+<br><br>
+
+As before we run a short equilibration simulation at the start, to push atoms apart slowly, before switching to LJ and FENE potentials. We then also add a further run where the attractive interactions are switched off, before switching them on. Again a compute is used to calculate the gyration radius of the polymer. By plotting this you will see the effect of the attractive interactions between the polymer and non-polymer beads.
+
+<br><br>
+
+To run, download the script <a href="lammps_tutorial/tutorial5/polymer+bridges.lam">polymer+bridges.lam</a> and <a href="lammps_tutorial/tutorial5/initial_configuration.txt">initial_configuration.txt</a> to a new directory containing the LAMMPS executable, and us the command <PRE> ./lmp_serial < polymer+bridges.lam </PRE>
+
+<br><br>
+
+<b><h2>6. Supercoiled Polymer</h2></b>
+
+Finally we will use the polymer model with torsional rigidity developed in the paper <a href="http://aip.scitation.org/doi/abs/10.1063/1.4870088">J. Chem. Phys. 140, 135103 (2014)</a> (<a href="http://arxiv.org/abs/1404.1704">arxiv</a>) to simulate a <a href="https://en.wikipedia.org/wiki/DNA_supercoil">supercoiled</a> loop. For this, two custom angle interaction potential are required (available <a href="https://www2.ph.ed.ac.uk/~cbrackle/lammps-twistable-dna.html">here</a> with instructions on how to recompile LAMMPS), and we will use the ellipse atoms style. With this style atoms have an orientation as well as a position. LAMMPS must be compiled with the "ASPHERE" package installed: run the command <PRE>make yes-asphere</PRE> before compiling.
+
+<br><br>
+
+The <a href="lammps_tutorial/tutorial6/initial_configuration.txt">initial_configuration.txt</a> file is set up with an un-writhed loop which has had three excess units of twist added to it. This has already been equilibrated, so there is no need to run with soft potentials. The LAMMPS script <a href="lammps_tutorial/tutorial6/supercoiled.lam">supercoiled.lam</a> runs a simulation where the loop will relax such that the excess twist will be converted to writhe. The dump file which is generated will also contain a <a href="https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation">quaternion</a> for each atom describing its orientation. 
+
+<br><br>
+
+<b><h2>Some notes on real simulations</h2></b>
+
+ <ol>
+  <li><b>Equilibration:</b>   For these examples with only a small number of atoms, we have included the equilibration simulation as part of the same script as the main simulation. Since this uses unrealistic interaction potentials, and for larger systems will take longer to run, for a real simulation a separate equilibration script is usually used to generate an equilibrated conformation. The <a href="https://lammps.sandia.gov/doc/Howto_restart.html">restart</a> file from this can then be used to initialize the main simulation (and we are only interested in those trajectories). We can then re-use the same equilibrated conformation for multiple simulations.</li>
+  <li><b>Random Numbers:</b>   Using the <a href="http://lammps.sandia.gov/doc/fix_langevin.html">langevin fix</a> adds random thermal motion to the simulation; the sequence of <a href="https://en.wikipedia.org/wiki/Pseudorandom_number_generator">pseudo-random numbers</a> used depends on the seed entered. We often want to run many repeat simulations in order to calculate ensemble average properties - for each repeat we would want to use a different seed and a different initial condition. It is also straightforward to set up loops in the LAMMPS script to run multiple repeat simulations one after the other, as detailed <a href="https://lammps.sandia.gov/doc/Howto_multiple.html">here</a>.</li>
+  <li><b>Parallelization:</b>   For simulating larger systems we can run LAMMPS on multiple processors using <a href="https://en.wikipedia.org/wiki/Message_Passing_Interface">mpi</a>; above we have run LAMMPS in serial mode. To run in parallel all we have to do is invoke LAMMPS via the mpirun command, specifying the number of processors to use as detailed <a href="https://lammps.sandia.gov/doc/Run_basics.html">here</a>.</li>
+</ol> 
+
+<br><br>
+  
 </BODY>
 </HTML>
