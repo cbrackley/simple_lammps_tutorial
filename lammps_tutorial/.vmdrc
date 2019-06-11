@@ -1,0 +1,37 @@
+# first load all defaults
+play /usr/local/lib/vmd/.vmdrc
+
+###########################
+# display settings
+
+# switch off the way far away things appear faint :
+display depthcue   off
+# switch off the way far away things are smaller than close things :
+display projection   Orthographic
+# switch off axes :
+axes location off
+# bg colour :
+color Display Background white
+
+
+###########################
+# change the default VDW radii
+# function to apply the radii on loading a structure
+proc my_set_def_vdw {args} {
+  lassign $args fname molid
+  set my_sel [atomselect $molid all]
+  $my_sel set radius 0.5
+  $my_sel delete
+  molinfo 0 set center "{0.0 0.0 0.0}"
+}
+# hook up the function.
+trace variable vmd_initialize_structure(0) w my_set_def_vdw
+trace variable vmd_initialize_structure(1) w my_set_def_vdw
+trace variable vmd_initialize_structure(2) w my_set_def_vdw 
+trace variable vmd_initialize_structure(3) w my_set_def_vdw 
+trace variable vmd_initialize_structure(4) w my_set_def_vdw 
+trace variable vmd_initialize_structure(5) w my_set_def_vdw 
+trace variable vmd_initialize_structure(6) w my_set_def_vdw 
+
+# set default display style
+mol default style VDW

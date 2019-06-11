@@ -1,0 +1,34 @@
+
+
+c++ ~/work/scripts_for_students/lammps/generate_gridDNA.cc -o generate_DNA
+./generate_DNA
+100
+60
+60
+60
+46454
+
+
+~/work/lmp-7Dec15_openmpi_SL7 < in.twistDNA_1stequilib
+
+
+c++ ~/work/DNAmodels/ellipsoids/tools/measure_linking_loop.cc -O3 -o measure_linking
+
+./measure_linking dump_1stequilib.DNA linking_1stequilib.dat
+
+# This showed that the loop had Tw=1 and Wr=-1 at the end of the simulation.
+# For this tutorial, I wanted an unwrithed loop, so I add another equilibration step where I increase the bending energy - should open into a circular loop
+
+~/work/lmp-7Dec15_openmpi_SL7 < in.twistDNA_2ndequilib
+
+
+# Now need to convert the restart to an lammps data file with ellipsoids
+
+./lammps_restart2data_with_ellipsoids.sh restart.2ndequilib equilibrated_loops.data
+
+
+# Now add some twists
+
+c++ ~/work/DNAmodels/ellipsoids/tools/add_linking.cc -O3 -o add_links
+./add_links equilibrated_loops.data initial_configuration.txt -4
+

@@ -1,0 +1,70 @@
+set term pngcairo enhanced font "Helvetica,14" size 500,300
+set output "LJ.png"
+
+set ylabel "U_{WCA}(r)"
+set xlabel "r [{/Symbol s}]"
+
+lj(x,e,s)=4*e*( (s/x)**12 - (s/x)**6 )
+ljcut(x,e,s,rc) = x<rc?lj(x,e,s)-lj(rc,e,s):0
+set title "Weeks-Chandler-Anderson Potential" offset 0,-1
+p [0.6:2][-1:4] ljcut(x,1,1,2**(1./6.)) lc rgb 'dark-red' lw 3 notitle
+
+reset
+
+set term pngcairo enhanced font "Helvetica,14" size 500,300
+set output "FENE.png"
+
+set ylabel "U_{FENE}(r)"
+set xlabel "r [{/Symbol s}]"
+
+lj(x,e,s)=4*e*( (s/x)**12 - (s/x)**6 )
+ljcut(x,e,s,rc) = x<rc?lj(x,e,s)-lj(rc,e,s):0
+set title "FENE bond potential" offset 0,-1
+K=30.0
+R0=1.6
+p [0.6:1.8][-1:150] ljcut(x,1,1,2**(1./6.))-0.5*K*R0**2.*log(1-(x/R0)**2) lc rgb 'dark-red' lw 3 notitle
+
+
+reset
+
+set term pngcairo enhanced font "Helvetica,14" size 500,300
+set output "LJattract.png"
+
+set ylabel "U_{LJ}(r)"
+set xlabel "r [{/Symbol s}]"
+
+lj(x,e,s)=4*e*( (s/x)**12 - (s/x)**6 )
+ljcut(x,e,s,rc) = x<rc?lj(x,e,s)-lj(rc,e,s):0
+set title "LJ potential with attractive part" offset 0,-1
+
+set label 1 at 1.5,12 "{/Symbol e}=10 k_BT"
+set label 2 at 1.5,8 "r_{cut}=1.8 {/Symbol s}"
+
+p [0.6:2][-10:20] 0 lw 0.5 lc 0 notitle , ljcut(x,10,1,1.8) lc rgb 'dark-red' lw 3 notitle
+
+
+
+reset
+
+set term pngcairo enhanced font "Helvetica,14" size 500,300
+set output "cosine.png"
+
+set ylabel "U_{BEND}(r)"
+set xlabel "{/Symbol q}"
+
+lj(x,e,s)=4*e*( (s/x)**12 - (s/x)**6 )
+ljcut(x,e,s,rc) = x<rc?lj(x,e,s)-lj(rc,e,s):0
+set title "Cosine bending potential" offset 0,-1
+
+set label 1 at 1.5,12 "{/Symbol e}=10 k_BT"
+set label 2 at 1.5,8 "r_{cut}=1.8 {/Symbol s}"
+
+set xtics ("0" 0,"{/Symbol p}/2" 0.5*pi, "{/Symbol p}" pi)
+
+set arrow from 0.2,0.5 to 0.7,0.7 nohead lw 2
+set arrow from 0.7,0.7 to 1.2,0.9 nohead lw 0.5
+set arrow from 0.7,0.7 to 1.0,1.2 nohead lw 2
+set label at 0.58,0.84 "{/Symbol q}"
+
+p [0:pi][0:2] 1+cos(x) lc rgb 'dark-red' lw 3 notitle,\
+"< echo -e '0.2 0.5\n0.7 0.7\n1.0 1.2'" w p pt 7 ps 2 lc rgb 'dark-blue' notitle
